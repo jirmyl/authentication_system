@@ -13,22 +13,46 @@ $data = json_decode(
     true
 );
 
-echo json_encode([
-    "success" => true,
-    "message" => "User registered successfully",
-    "data" => $data
-]);
-$data = json_decode(
-    file_get_contents("php://input"),
-    true
-);
+// $data = json_decode(
+//     file_get_contents("php://input"),
+//     true
+// );
 
 $fullname = $data['fullname'];
 $email = $data['email'];
-$password = password_hash(
-    $data['password'],
+$password = $data['password'];
+$confirmPassword = $data['confirmPassword'];
+
+if ($password !== $confirmPassword) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Passwords do not match"
+        
+    ]);
+    exit();
+}
+$passwordH = password_hash(
+    $password,
     PASSWORD_DEFAULT
 );
+
+$passwordV = password_verify(
+    $password,
+    $passwordH
+);
+if ($passwordV == true){
+
+$checkEmail = mysqli_query(
+    $conn,
+    "SELECT id FROM users WHERE email = '$email'"
+);
+if (mysqli_num_rows($checkEmail) > 0) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Email already exists"
+    ]);
+    exit();
+}
 
 $sql = "
 INSERT INTO users(
@@ -42,17 +66,19 @@ VALUES(
     '$password'
 )";
 
+
 $result = mysqli_query(
     $conn,
     $sql
 );
+
 
 if($result){
 
     echo json_encode([
         "success" => true,
         "message" => "User registered successfully",
-        "data" => $data
+        // "data" => $data
     ]);
 
 }else{
@@ -62,4 +88,14 @@ if($result){
         "message" => mysqli_error($conn)
     ]);
 
+}
+}
+
+else {
+     echo json_encode([
+        "success" => false,
+        "message" => "Passwords not verified"
+        
+    ]);
+    exit();
 }
